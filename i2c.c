@@ -75,9 +75,6 @@ int i2c_readlast(){
 }
 
 //Send "STOP" condition
-void i2c_stop(void){
-	/*I2C_I2CONSET = 0x10;		//	set STO
-	I2C_I2CONCLR = 8;			//	clear SI*/
-	//STOPI2C
+void i2c_stop(void){	
 	I2CONSET = 0x40;		//	Re-enable I2C bus interface
 }
