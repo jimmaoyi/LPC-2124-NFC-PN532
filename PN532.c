@@ -107,7 +107,7 @@ void sendCommand(unsigned int command[], int cmdlen, int addr)
 }
 
 
-void delay(void)
+void NFC_delay(void)
 {
     int i = 0, x = 0;
     for (i = 0; i < 59999; i++) {
@@ -118,7 +118,7 @@ void delay(void)
 
 void readResponseFrames(unsigned int addr, unsigned int * result)
 {
-    delay();
+    NFC_delay();
     i2c_Start(addr);
 
     int response_1[8];
