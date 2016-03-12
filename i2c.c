@@ -1,100 +1,103 @@
+/*
+    The I2C driver.
+*/
+
+
 #include "i2c.h"
+#include <targets/LPC2000.h>
 
 
 /**
-    Initialize I2C
+    Initializes the I2C driver.
 */
 void i2c_Init(void)
 {
-    PINSEL0 |= 0x50;
-    I2SCLL = I2SCLH = 400; // 75kBits @ 58,98 <MHz
-    I2CONSET = 0x40; // enable I2C bus interface
+    PINSEL0 |= 0x50; 
+    I2SCLL = I2SCLH = 400;	// 75kBits @ 58,98 <MHz
+    I2CONSET = 0x40;		// enable I2C bus interface
 }
 
-
 /**
-    Handle timeouts and interrupt action
+    Handles timeouts and interrupts.
 */
-static void i2c_WaitForSI(void)
+static void wait_for_SI(void)
 {
     unsigned long timeout = 1600000;
-    I2CONCLR = 8; // clear SI starts action
-    while (timeout-- && !(I2CONSET & 8)); // check SI with timeout
+    I2CONCLR = 8;
+    while (timeout-- && !(I2CONSET & 8));
 }
 
 
 /**
-    Send "START" condition
+    Sends the START condition.
+    @param addr The address.
 */
-int i2c_start(int addr)
+int i2c_Start(int addr)
 {
-    I2CONCLR = 0x14; // clear STO, AA
-    I2CONSET = 0x28; // set STA, SI
-    i2c_WaitForSI();
-
-    I2CONCLR = 0x20; // clear STA
-
-    if (I2STAT > 0x10) { // bus is busy
+    I2CONCLR = 0x14;								
+    I2CONSET = 0x28;								
+    wait_for_SI();
+    I2CONCLR = 0x20;
+                                                                    
+    if (I2STAT > 0x10) {
         return -1;
     }
-    I2DAT = addr; // set address
-    i2c_WaitForSI();
 
-    return (I2STAT != 0x40 && I2STAT != 0x18); // no acknowledge
+    I2DAT = addr;								
+    wait_for_SI();
+    return (I2STAT != 0x40 && I2STAT != 0x18);
 }
 
 
 /**
-    Write to I2C bus
+    Writes on the I2C bus.
+    @param buf The buffer to be written.
+    @param count How many times to try.
 */
 int i2c_Write(unsigned char *buf, unsigned count)
 {
     while (count--) {
-        I2DAT = *buf++; // load data into I2DAT register
-        i2c_WaitForSI();
-
+        I2DAT = *buf++;						
+        wait_for_SI();
         if (I2STAT != 0x28) {
-            return 1;  // no acknowledge
-        }
+            return 1;		
+	}
     }
     return 0;
 }
 
-
 /**
-    Read from I2C bus
+    Reads from the I2C bus.
 */
 int i2c_Read(void)
 {
-    I2CONSET = AA; // assert Acknowledge
-    i2c_WaitForSI();
-
+    I2CONSET = AA; 
+    wait_for_SI();
     if (I2STAT != 0x50 && I2STAT != 0x40) {
-        return -1; // not OK
+        return -1;
+    } else {
+      return I2DAT;
     }
-    return I2DAT;
 }
 
-
 /**
-    Read last byte from I2C Bus
+    Reads the last byte from the NFC bus.
 */
-int i2c_ReadLastByte(void)
+int i2c_ReadLast(void)
 {
-  I2CONCLR = AA; // assert Acknowledge
-  i2c_WaitForSI();
-
-    if (I2STAT != 0x58){
-        return -1; // not OK
+    I2CONCLR = AA;
+    wait_for_SI();
+    if (I2STAT != 0x58) {
+      return -1;
+    } else {
+      return I2DAT;
     }
-    return I2DAT;
 }
 
-
 /**
-    Send "STOP" condition
+    Sends the STOP condition.
 */
-void i2c_stop(void)
-{
-    I2CONSET = 0x40; // re-enable I2C bus interface
+void i2c_Stop(void)
+{	
+    I2CONSET = 0x40;	
 }
